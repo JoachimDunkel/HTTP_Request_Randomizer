@@ -22,3 +22,8 @@
 *.iws
 
 .vscode/
+
+.eggs/
+
+
+http_request_randomizer.egg-info/
