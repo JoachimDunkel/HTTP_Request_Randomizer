@@ -31,6 +31,21 @@ handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)-6s %(levelname)-8s %(message)s')
 handler.setFormatter(formatter)
 
+class RequestInstance():
+    def __init__(self, method, headers, data, params, req_timeout, proxy ):
+        self.method = method
+        self.headers = headers
+        self.data = data
+        self.params = params
+        self.req_timeout = req_timeout
+        self.proxy = proxy
+        
+    def performRequest(self, url):
+        return requests.request(self.method, url, headers=self.headers, data=self.data, params=self.params, timeout=self.req_timeout,
+                proxies={
+                    "http": "http://{0}".format(self.proxy),
+                    "https": "https://{0}".format(self.proxy)
+                })
 
 class RequestProxy:
     def __init__(self, web_proxy_list=[], sustain=False, timeout=5, protocol=Protocol.HTTP, log_level=0):
@@ -40,36 +55,7 @@ class RequestProxy:
         self.userAgent = UserAgentManager(file=os.path.join(os.path.dirname(__file__), '../data/user_agents.txt'))
         self.sustain = sustain
         self.proxy_provider = FreeProxy()
-        #####
-        # Each of the classes below implements a specific URL Parser
-        # #####
-        # parsers = list([])
-        # parsers.append(FreeProxyParser('FreeProxy', 'http://free-proxy-list.net', timeout=timeout))
-        # parsers.append(PremProxyParser('PremProxy', 'https://premproxy.com', timeout=timeout))
-        # #parsers.append(ProxyForEuParser('ProxyForEU', 'http://proxyfor.eu/geo.php', 1.0, timeout=timeout)) <--doesn't work anymore
-        # #parsers.append(RebroWeeblyParser('ReBro', 'http://rebro.weebly.com', timeout=timeout)) <--doesn't work anymore
-        
-        # # parsers.append(SslProxyParser('SslProxy', 'https://www.sslproxies.org', timeout=timeout)) <-- is the same as free-proxy-list.net
 
-        # self.logger.debug("=== Initialized Proxy Parsers ===")
-        # for i in range(len(parsers)):
-        #     self.logger.debug("\t {0}".format(parsers[i].__str__()))
-        # self.logger.debug("=================================")
-        
-        # self.sustain = sustain
-        # self.parsers = parsers
-        # self.proxy_list = web_proxy_list
-        # for parser in parsers:
-        #     try:
-        #         size = len(self.proxy_list)
-        #         self.proxy_list += parser.parse_proxyList()
-        #         self.logger.debug('Added {} proxies from {}'.format(len(self.proxy_list)-size, parser.id))
-        #     except ReadTimeout:
-        #         self.logger.warning("Proxy Parser: '{}' TimedOut!".format(parser.url))
-        # self.logger.debug('Total proxies = '+str(len(self.proxy_list)))
-        # # filtering the list of available proxies according to user preferences
-        # self.proxy_list = [p for p in self.proxy_list if protocol in p.protocols]
-        # self.logger.debug('Filtered proxies = '+str(len(self.proxy_list)))
         self.proxy_list = self.proxy_provider.get_proxy_list(True)
         self.current_proxy = self.randomize_proxy()
 
@@ -87,12 +73,7 @@ class RequestProxy:
         return headers
 
     def randomize_proxy(self):
-        
-        # try:
-        #     return self.proxy_provider.get()
-        # except FreeProxyException as error:
-        #     raise ProxyListException("list is empty")
-        
+                
         if len(self.proxy_list) == 0:
             raise ProxyListException("list is empty")
         
@@ -106,6 +87,9 @@ class RequestProxy:
     # Proxy format:
     # http://<USERNAME>:<PASSWORD>@<IP-ADDR>:<PORT>
     #####
+    
+
+    
     def generate_proxied_request(self, url, method="GET", params={}, data={}, headers={}, req_timeout=30):
         try:
             random.shuffle(self.proxy_list)
@@ -122,11 +106,14 @@ class RequestProxy:
 
             self.logger.debug("Using headers: {0}".format(str(headers)))
             self.logger.debug("Using proxy: {0}".format(str(self.current_proxy)))
-            request = requests.request(method, url, headers=headers, data=data, params=params, timeout=req_timeout,
-                    proxies={
-                        "http": "http://{0}".format(self.current_proxy),
-                        "https": "https://{0}".format(self.current_proxy)
-                    })
+            
+            self.current_request_instance = RequestInstance(method, headers, data, params, req_timeout, self.current_proxy)
+            request = self.current_request_instance.performRequest(url)
+            # request = requests.request(method, url, headers=headers, data=data, params=params, timeout=req_timeout,
+            #         proxies={
+            #             "http": "http://{0}".format(self.current_proxy),
+            #             "https": "https://{0}".format(self.current_proxy)
+            #         })
             # Avoid HTTP request errors
             if request.status_code == 409:
                 raise ConnectionError("HTTP Response [409] - Possible Cloudflare DNS resolution error")
@@ -135,6 +122,9 @@ class RequestProxy:
             elif request.status_code == 503:
                 raise ConnectionError("HTTP Response [503] - Service unavailable error")
             self.logger.info('RR Status {}'.format(request.status_code))
+            
+            
+            
             return request
         
         except ConnectionError:
@@ -171,6 +161,10 @@ class RequestProxy:
             self.randomize_proxy()
 
 
+hard_url = 'https://www.cardmarket.com/en/Magic/Products/Singles/Modern-Horizons-2/Academy-Manufactor?language=1&minCondition=2'
+
+
+
 if __name__ == '__main__':
 
     start = time.time()
@@ -188,8 +182,15 @@ if __name__ == '__main__':
         if request is not None:
             print("\t Response: ip={0}".format(u''.join(request.text).encode('utf-8')))
             
-            if request.status_code == 200:
-                print("SUCCESS")
-                break
+            print("Success now trying this ip with hard url.")
+            
+            mkm_response = req_proxy.current_request_instance.performRequest(hard_url)
+            
+            if mkm_response is not None:
+                if mkm_response.status_code == 200:
+                    print("MKM - SUCCESS")
+
+            
+            
             
             
