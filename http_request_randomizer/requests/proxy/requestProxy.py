@@ -44,8 +44,8 @@ class RequestProxy:
         parsers.append(FreeProxyParser('FreeProxy', 'http://free-proxy-list.net', timeout=timeout))
         #parsers.append(ProxyForEuParser('ProxyForEU', 'http://proxyfor.eu/geo.php', 1.0, timeout=timeout)) <--doesn't work anymore
         #parsers.append(RebroWeeblyParser('ReBro', 'http://rebro.weebly.com', timeout=timeout)) <--doesn't work anymore
-        parsers.append(PremProxyParser('PremProxy', 'https://premproxy.com', timeout=timeout))
-        parsers.append(SslProxyParser('SslProxy', 'https://www.sslproxies.org', timeout=timeout))
+        #  parsers.append(PremProxyParser('PremProxy', 'https://premproxy.com', timeout=timeout))
+        # parsers.append(SslProxyParser('SslProxy', 'https://www.sslproxies.org', timeout=timeout)) <-- is the same as free-proxy-list.net
 
         self.logger.debug("=== Initialized Proxy Parsers ===")
         for i in range(len(parsers)):
@@ -124,6 +124,7 @@ class RequestProxy:
                 raise ConnectionError("HTTP Response [503] - Service unavailable error")
             self.logger.info('RR Status {}'.format(request.status_code))
             return request
+        
         except ConnectionError:
             try:
                 self.proxy_list.remove(self.current_proxy)

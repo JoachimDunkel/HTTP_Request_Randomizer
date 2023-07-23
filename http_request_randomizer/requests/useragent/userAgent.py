@@ -16,7 +16,7 @@ class UserAgentManager:
             logger.info('Using fake-useragent package for user agents.')
             if fallback is None:
                 fallback = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36'
-            self.fakeuseragent = FakeUserAgent(fallback=fallback, cache=False)
+            self.fakeuseragent = FakeUserAgent(fallback=fallback)
 
     def load_user_agents(self, useragentsfile):
         """
