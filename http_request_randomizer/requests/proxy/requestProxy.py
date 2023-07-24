@@ -40,36 +40,7 @@ class RequestProxy:
         self.userAgent = UserAgentManager(file=os.path.join(os.path.dirname(__file__), '../data/user_agents.txt'))
         self.sustain = sustain
         self.proxy_provider = FreeProxy()
-        #####
-        # Each of the classes below implements a specific URL Parser
-        # #####
-        # parsers = list([])
-        # parsers.append(FreeProxyParser('FreeProxy', 'http://free-proxy-list.net', timeout=timeout))
-        # parsers.append(PremProxyParser('PremProxy', 'https://premproxy.com', timeout=timeout))
-        # #parsers.append(ProxyForEuParser('ProxyForEU', 'http://proxyfor.eu/geo.php', 1.0, timeout=timeout)) <--doesn't work anymore
-        # #parsers.append(RebroWeeblyParser('ReBro', 'http://rebro.weebly.com', timeout=timeout)) <--doesn't work anymore
-        
-        # # parsers.append(SslProxyParser('SslProxy', 'https://www.sslproxies.org', timeout=timeout)) <-- is the same as free-proxy-list.net
 
-        # self.logger.debug("=== Initialized Proxy Parsers ===")
-        # for i in range(len(parsers)):
-        #     self.logger.debug("\t {0}".format(parsers[i].__str__()))
-        # self.logger.debug("=================================")
-        
-        # self.sustain = sustain
-        # self.parsers = parsers
-        # self.proxy_list = web_proxy_list
-        # for parser in parsers:
-        #     try:
-        #         size = len(self.proxy_list)
-        #         self.proxy_list += parser.parse_proxyList()
-        #         self.logger.debug('Added {} proxies from {}'.format(len(self.proxy_list)-size, parser.id))
-        #     except ReadTimeout:
-        #         self.logger.warning("Proxy Parser: '{}' TimedOut!".format(parser.url))
-        # self.logger.debug('Total proxies = '+str(len(self.proxy_list)))
-        # # filtering the list of available proxies according to user preferences
-        # self.proxy_list = [p for p in self.proxy_list if protocol in p.protocols]
-        # self.logger.debug('Filtered proxies = '+str(len(self.proxy_list)))
         self.proxy_list = self.proxy_provider.get_proxy_list(True)
         self.current_proxy = self.randomize_proxy()
 
@@ -88,11 +59,6 @@ class RequestProxy:
 
     def randomize_proxy(self):
         
-        # try:
-        #     return self.proxy_provider.get()
-        # except FreeProxyException as error:
-        #     raise ProxyListException("list is empty")
-        
         if len(self.proxy_list) == 0:
             raise ProxyListException("list is empty")
         
@@ -109,7 +75,6 @@ class RequestProxy:
     def generate_proxied_request(self, url, method="GET", params={}, data={}, headers={}, req_timeout=30):
         try:
             random.shuffle(self.proxy_list)
-            # req_headers = dict(params.items() + self.generate_random_request_headers().items())
 
             req_headers = dict(params.items())
             req_headers_random = dict(self.generate_random_request_headers().items())
